@@ -1,0 +1,118 @@
+<%
+require 'active_record'
+require 'models/gig'
+require 'mysql'
+
+ActiveRecord::Base.establish_connection(
+	:adapter => '',
+	:host => '',
+	:database => '',
+	:username => '',
+	:password => ''
+)
+@yui = "http://yui.yahooapis.com/2.4.1/build"
+@gigs = Gig.find(:all)
+%>
+<html>
+<head>
+	<title>Ripped Tickets</title>
+	<link type="text/css" rel="stylesheet" href="<%=@yui%>/datatable/assets/skins/sam/datatable.css"/>
+	<script type="text/javascript" src="<%=@yui%>/yahoo-dom-event/yahoo-dom-event.js"></script>
+	<script type="text/javascript" src="<%=@yui%>/element/element-beta-min.js"></script>
+	<script type="text/javascript" src="<%=@yui%>/datasource/datasource-beta-min.js"></script>
+	<script type="text/javascript" src="<%=@yui%>/datatable/datatable-beta-min.js"></script>
+	<script type="text/javascript" src="formatDate.js"></script>
+	<script>
+		YAHOO.util.Event.addListener(window, "load", function() {
+			this.parseNumberFromCurrency = function(s) {
+				return parseFloat(s.substring(1));
+			}
+			this.parseDateFromString = function(s) {
+				//Dates are stored as YYYY-MM-DD
+				var match = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+				if (match == null) {return s};
+				var date = new Date();
+				date.setFullYear(match[1],parseInt(match[2])-1,match[3]);
+				return date;					
+			}
+			this.formatDate = function(date) {
+				return date.formatDate("dS F, Y");	
+			}
+
+			datatableInit = new function() {
+				var columnDefs = [
+					{key:"artist",label:"Artist",sortable:true},
+					{key:"venue",label:"Venue",sortable:true},
+					{key:"date",label:"Date",formatter:this.formatDate,sortable:true},
+					{key:"price",label:"Price",formatter:YAHOO.widget.DataTable.formatCurrency,sortable:true},
+					{key:"extra",label:"Extra Info",sortable:false}
+				];
+
+				this.dataSource = new YAHOO.util.DataSource(YAHOO.util.Dom.get("gigs"));
+				this.dataSource.responseType = YAHOO.util.DataSource.TYPE_HTMLTABLE;
+				this.dataSource.responseSchema = {
+					fields: [{key:"artist"},
+									{key:"venue"},
+									{key:"date", parser:this.parseDateFromString},
+									{key:"price",parser:this.parseNumberFromCurrency},
+									{key:"extra"}]
+				}
+				this.dataTable = new YAHOO.widget.DataTable("markup", columnDefs, this.dataSource,
+					{sortedBy:{key:"date",dir:"asc"}});
+			}
+		});
+	</script>
+	<style>
+		body { 
+			font-family: sans-serif;
+			margin-left: 10%;
+			margin-top:1.5em;
+			margin-right: 10%;
+			line-height:1.5em;	
+		}
+		.yui-dt-col-price {
+			width:8em;
+		}
+		.yui-dt-col-extra {
+			width: 8em;
+		}
+		.yui-dt-col-date {
+			width: 6em;
+		}
+	</style>
+</head>
+<body>
+
+<h1>Ripped Tickets</h1>
+
+<p>Welcome to Ripped Tickets! Here you'll find gig listings for Edinburgh, Glasgow and anywhere else that <a href="http://www.rippingrecords.com">Ripping Records</a> sell tickets for.<br/>
+There's an <a href="http://www.rippedtickets.info/rss.php">RSS feed</a> if you're into that kind of thing, or you can just use the table below.<br/>
+If you've got anything to say, feel free to drop me a line via contact(at)rippedtickets.info</p>
+<div id="container" class="yui-skin-sam">
+<div id="markup">
+<table id="gigs" border="1">
+	<thead>
+ 		<tr>
+	  	<th>Artist</th>
+	  	<th>Venue</th>
+ 	 		<th>Date</th>
+ 	 		<th>Price</th>
+ 	 	<th>Extra info</th>
+  </tr>
+	</thead>
+  <tbody>
+<% @gigs.each {|g| %>
+		<tr>
+			<td><%= g.artist %></td>
+			<td><%= g.venue %></td>
+			<td><%= g.date %></td>
+			<td><%= (g.price == nil) ? "-" : g.price %></td>
+			<td><%= g.extra %></td>
+		</tr>
+<% } %>
+	</tbody>
+</table>
+</div>
+</div>
+</body>
+</html>
